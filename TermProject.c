@@ -398,6 +398,18 @@ Process* InitCurRunningProcess(System *system, bool *is_running)
     return cur_running_process;
 }
 
+// 프로세스 처리 함수
+void ExeProcess(Process *process, System *system)
+{
+    process->remaining_cpu_burst -= 1;
+    if (process->remaining_cpu_burst == 0)
+    {
+        process->state = TERMINATED;
+        process->turnaround_time = system->cur_time - process->arrival_time + 1;
+        process->waiting_time = process->turnaround_time - process->cpu_burst_time;
+    }
+}
+
 // 간트 차트에 현재 상태 기록
 void RecordGantt(System *system, int running_pid)
 {
@@ -446,10 +458,8 @@ void Fcfs(System *system)
 
                 // 새 프로세스도 한 차례 실행
                 cur_running_process->remaining_cpu_burst -= 1;
-
                 if (cur_running_process->remaining_cpu_burst == 0)
                 {
-
                     cur_running_process->state = TERMINATED;
                     cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
                     cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
@@ -650,56 +660,6 @@ void SjfP(System *system)
     }
 
     // 실행 중인 프로세스가 있고 Ready Queue에도 프로세스가 있는 경우 선점 가능한지 확인
-    if (is_running && !IsEmpty(&system->ready_queue))
-    {
-        int shortest_idx = -1;
-        int shortest_burst = cur_running_process->remaining_cpu_burst;
-
-        // Ready Queue에서 현재 실행 중인 프로세스보다 더 짧은 프로세스 찾기
-        for (int i = 0; i < system->ready_queue.size; i++)
-        {
-            int idx = (system->ready_queue.front + i) % system->ready_queue.capacity;
-            if (system->ready_queue.processes[idx].remaining_cpu_burst < shortest_burst)
-            {
-                shortest_idx = idx;
-                shortest_burst = system->ready_queue.processes[idx].remaining_cpu_burst;
-            }
-        }
-
-        // 더 짧은 프로세스가 있는 경우 선점
-        if (shortest_idx != -1)
-        {
-            Process shortest_process = system->ready_queue.processes[shortest_idx];
-
-            // 현재 실행 중인 프로세스를 Ready Queue로 보내기
-            cur_running_process->state = READY;
-            Enqueue(&system->ready_queue, *cur_running_process);
-
-            // Ready Queue에서 shortest 프로세스 제거하기
-            Queue temp_queue = InitQueue(system->ready_queue.capacity);
-            while (!IsEmpty(&system->ready_queue))
-            {
-                Process p = Dequeue(&system->ready_queue);
-                if (p.pid != shortest_process.pid)
-                {
-                    Enqueue(&temp_queue, p);
-                }
-            }
-            // 임시 큐를 준비 큐로 복사
-            while (!IsEmpty(&temp_queue))
-            {
-                Process p = Dequeue(&temp_queue);
-                Enqueue(&system->ready_queue, p);
-            }
-
-            // 선점한 프로세스를 실행 상태로 변경
-            system->processes[shortest_process.pid - 1].state = RUNNING;
-            cur_running_process = &system->processes[shortest_process.pid - 1];
-            free(temp_queue.processes);
-        }
-    }
-
-    // 실행 중인 프로세스 처리
     if (cur_running_process != NULL)
     {
         // I/O 요청이 있을 경우
@@ -713,7 +673,6 @@ void SjfP(System *system)
             // I/O로 인해 CPU가 비었으므로 Ready Queue에서 다음 프로세스 선택
             if (!IsEmpty(&system->ready_queue))
             {
-                // 가장 짧은 프로세스 선택
                 int shortest_idx = system->ready_queue.front;
                 int shortest_burst = system->ready_queue.processes[shortest_idx].remaining_cpu_burst;
 
@@ -750,7 +709,6 @@ void SjfP(System *system)
 
                 // 새 프로세스도 한 차례 실행
                 cur_running_process->remaining_cpu_burst -= 1;
-
                 if (cur_running_process->remaining_cpu_burst == 0)
                 {
                     cur_running_process->state = TERMINATED;
@@ -764,10 +722,72 @@ void SjfP(System *system)
                 cur_running_process = NULL; // CPU가 idle 상태
             }
         }
+        // I/O 요청이 없을 경우
+        else if (is_running && !IsEmpty(&system->ready_queue))
+        {
+            int shortest_idx = -1;
+            int shortest_burst = cur_running_process->remaining_cpu_burst;
+
+            for (int i = 0; i < system->ready_queue.size; i++)
+            {
+                int idx = (system->ready_queue.front + i) % system->ready_queue.capacity;
+                if (system->ready_queue.processes[idx].remaining_cpu_burst < shortest_burst)
+                {
+                    shortest_idx = idx;
+                    shortest_burst = system->ready_queue.processes[idx].remaining_cpu_burst;
+                }
+            }
+
+            // 더 짧은 프로세스가 있는 경우 선점
+            if (shortest_idx != -1)
+            {
+                Process shortest_process = system->ready_queue.processes[shortest_idx];
+
+                cur_running_process->state = READY;
+                Enqueue(&system->ready_queue, *cur_running_process);
+
+                Queue temp_queue = InitQueue(system->ready_queue.capacity);
+                while (!IsEmpty(&system->ready_queue))
+                {
+                    Process p = Dequeue(&system->ready_queue);
+                    if (p.pid != shortest_process.pid)
+                    {
+                        Enqueue(&temp_queue, p);
+                    }
+                }
+                while (!IsEmpty(&temp_queue))
+                {
+                    Process p = Dequeue(&temp_queue);
+                    Enqueue(&system->ready_queue, p);
+                }
+
+                system->processes[shortest_process.pid - 1].state = RUNNING;
+                cur_running_process = &system->processes[shortest_process.pid - 1];
+                free(temp_queue.processes);
+
+                cur_running_process->remaining_cpu_burst -= 1;
+                if (cur_running_process->remaining_cpu_burst == 0)
+                {
+                    cur_running_process->state = TERMINATED;
+                    cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
+                    cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
+                }
+            }
+            else
+            {
+                cur_running_process->remaining_cpu_burst -= 1;
+                if (cur_running_process->remaining_cpu_burst == 0)
+                {
+                    cur_running_process->state = TERMINATED;
+                    cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
+                    cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
+                }
+            }
+        }
         else
         {
-            // 일반적인 CPU 실행
             cur_running_process->remaining_cpu_burst -= 1;
+
             if (cur_running_process->remaining_cpu_burst == 0)
             {
                 cur_running_process->state = TERMINATED;
@@ -776,6 +796,7 @@ void SjfP(System *system)
             }
         }
     }
+
     if (cur_running_process != NULL)
     {
         RecordGantt(system, cur_running_process->pid);
@@ -844,7 +865,7 @@ void priority_np(System *system)
             cur_running_process->remaining_io_burst = cur_running_process->io_burst_time[cur_running_process->cur_io_index];
             Enqueue(&system->waiting_queue, *cur_running_process);
 
-            // 즉시 다음 프로세스 선택 (Priority 방식)
+            // I/O로 인해 CPU가 비었으므로 Ready Queue에서 다음 프로세스 선택
             if (!IsEmpty(&system->ready_queue))
             {
                 int highest_idx = system->ready_queue.front;
@@ -958,51 +979,6 @@ void priority_p(System *system)
     }
 
     // 실행 중인 프로세스가 있고 Ready Queue에도 프로세스가 있는 경우 선점 가능한지 확인
-    if (is_running && !IsEmpty(&system->ready_queue))
-    {
-        int highest_idx = -1;
-        int highest_priority = cur_running_process->priority;
-
-        for (int i = 0; i < system->ready_queue.size; i++)
-        {
-            int idx = (system->ready_queue.front + i) % system->ready_queue.capacity;
-            if (system->ready_queue.processes[idx].priority < highest_priority)
-            {
-                highest_idx = idx;
-                highest_priority = system->ready_queue.processes[idx].priority;
-            }
-        }
-
-        // 더 높은 우선순위 프로세스가 있으면 선점
-        if (highest_idx != -1)
-        {
-            Process highest_process = system->ready_queue.processes[highest_idx];
-
-            cur_running_process->state = READY;
-            Enqueue(&system->ready_queue, *cur_running_process);
-
-            Queue temp_queue = InitQueue(system->ready_queue.capacity);
-            while (!IsEmpty(&system->ready_queue))
-            {
-                Process p = Dequeue(&system->ready_queue);
-                if (p.pid != highest_process.pid)
-                {
-                    Enqueue(&temp_queue, p);
-                }
-            }
-            while (!IsEmpty(&temp_queue))
-            {
-                Process p = Dequeue(&temp_queue);
-                Enqueue(&system->ready_queue, p);
-            }
-
-            system->processes[highest_process.pid - 1].state = RUNNING;
-            cur_running_process = &system->processes[highest_process.pid - 1];
-            free(temp_queue.processes);
-        }
-    }
-
-    // 실행 중인 프로세스 처리
     if (cur_running_process != NULL)
     {
         // I/O 요청이 있을 경우
@@ -1052,7 +1028,6 @@ void priority_p(System *system)
 
                 // 새 프로세스도 한 차례 실행
                 cur_running_process->remaining_cpu_burst -= 1;
-
                 if (cur_running_process->remaining_cpu_burst == 0)
                 {
                     cur_running_process->state = TERMINATED;
@@ -1068,6 +1043,51 @@ void priority_p(System *system)
         }
         else
         {
+            if (is_running && !IsEmpty(&system->ready_queue))
+            {
+                int highest_idx = -1;
+                int highest_priority = cur_running_process->priority;
+
+                for (int i = 0; i < system->ready_queue.size; i++)
+                {
+                    int idx = (system->ready_queue.front + i) % system->ready_queue.capacity;
+                    if (system->ready_queue.processes[idx].priority < highest_priority)
+                    {
+                        highest_idx = idx;
+                        highest_priority = system->ready_queue.processes[idx].priority;
+                    }
+                }
+
+                // 더 높은 우선순위 프로세스가 있으면 선점
+                if (highest_idx != -1)
+                {
+                    Process highest_process = system->ready_queue.processes[highest_idx];
+
+                    cur_running_process->state = READY;
+                    Enqueue(&system->ready_queue, *cur_running_process);
+
+                    Queue temp_queue = InitQueue(system->ready_queue.capacity);
+                    while (!IsEmpty(&system->ready_queue))
+                    {
+                        Process p = Dequeue(&system->ready_queue);
+                        if (p.pid != highest_process.pid)
+                        {
+                            Enqueue(&temp_queue, p);
+                        }
+                    }
+                    while (!IsEmpty(&temp_queue))
+                    {
+                        Process p = Dequeue(&temp_queue);
+                        Enqueue(&system->ready_queue, p);
+                    }
+
+                    system->processes[highest_process.pid - 1].state = RUNNING;
+                    cur_running_process = &system->processes[highest_process.pid - 1];
+                    free(temp_queue.processes);
+                }
+            }
+
+            // CPU 실행
             cur_running_process->remaining_cpu_burst -= 1;
             if (cur_running_process->remaining_cpu_burst == 0)
             {
@@ -1086,7 +1106,6 @@ void priority_p(System *system)
     {
         RecordGantt(system, -1);
     }
-
     HandleIO(system);
     system->cur_time += 1;
 }
@@ -1119,7 +1138,7 @@ void round_robin(System *system)
             Enqueue(&system->waiting_queue, *cur_running_process);
             system->cur_used_quantum = 0;
 
-            // 즉시 다음 프로세스 선택
+            // I/O로 인해 CPU가 비었으므로 Ready Queue에서 다음 프로세스 선택
             if (!IsEmpty(&system->ready_queue))
             {
                 Process next_process = Dequeue(&system->ready_queue);
@@ -1151,7 +1170,7 @@ void round_robin(System *system)
             cur_running_process->state = READY;
             Enqueue(&system->ready_queue, *cur_running_process);
 
-            // 다음 프로세스 선택
+            // I/O로 인해 CPU가 비었으므로 Ready Queue에서 다음 프로세스 선택
             if (!IsEmpty(&system->ready_queue))
             {
                 Process next_process = Dequeue(&system->ready_queue);
