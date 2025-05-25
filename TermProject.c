@@ -172,6 +172,17 @@ bool HasIORequest(Process *process)
     return false;
 }
 
+// CPU 실행 및 종료 처리 함수
+void ExecuteCPU(Process *process, System *system)
+{
+    process->remaining_cpu_burst -= 1;
+    {
+        process->state = TERMINATED;
+        process->turnaround_time = system->cur_time - process->arrival_time + 1;
+        process->waiting_time = process->turnaround_time - process->cpu_burst_time;
+    }
+}
+
 // I/O 작업 처리 함수
 void HandleIO(System *system)
 {
@@ -398,18 +409,6 @@ Process* InitCurRunningProcess(System *system, bool *is_running)
     return cur_running_process;
 }
 
-// 프로세스 처리 함수
-void ExeProcess(Process *process, System *system)
-{
-    process->remaining_cpu_burst -= 1;
-    if (process->remaining_cpu_burst == 0)
-    {
-        process->state = TERMINATED;
-        process->turnaround_time = system->cur_time - process->arrival_time + 1;
-        process->waiting_time = process->turnaround_time - process->cpu_burst_time;
-    }
-}
-
 // 간트 차트에 현재 상태 기록
 void RecordGantt(System *system, int running_pid)
 {
@@ -457,24 +456,12 @@ void Fcfs(System *system)
                 system->processes[next_process.pid - 1].state = RUNNING;
 
                 // 새 프로세스도 한 차례 실행
-                cur_running_process->remaining_cpu_burst -= 1;
-                if (cur_running_process->remaining_cpu_burst == 0)
-                {
-                    cur_running_process->state = TERMINATED;
-                    cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                    cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
-                }
+                ExecuteCPU(cur_running_process, system);
             }
         }
         else
         {
-            cur_running_process->remaining_cpu_burst -= 1;
-            if (cur_running_process->remaining_cpu_burst == 0)
-            {
-                cur_running_process->state = TERMINATED;
-                cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
-            }
+            ExecuteCPU(cur_running_process, system);
         }
         RecordGantt(system, cur_running_process->pid);
     }
@@ -583,25 +570,13 @@ void SjfNP(System *system)
                 system->processes[short_process.pid - 1].state = RUNNING;
 
                 // 새 프로세스도 한 차례 실행
-                cur_running_process->remaining_cpu_burst -= 1;
-                if (cur_running_process->remaining_cpu_burst == 0)
-                {
-                    cur_running_process->state = TERMINATED;
-                    cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                    cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
-                }
+                ExecuteCPU(cur_running_process, system);
                 free(temp_queue.processes);
             }
         }
         else
         {
-            cur_running_process->remaining_cpu_burst -= 1;
-            if (cur_running_process->remaining_cpu_burst == 0)
-            {
-                cur_running_process->state = TERMINATED;
-                cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
-            }
+            ExecuteCPU(cur_running_process, system);
         }
         RecordGantt(system, cur_running_process->pid);
     }
@@ -708,13 +683,7 @@ void SjfP(System *system)
                 system->processes[shortest_process.pid - 1].state = RUNNING;
 
                 // 새 프로세스도 한 차례 실행
-                cur_running_process->remaining_cpu_burst -= 1;
-                if (cur_running_process->remaining_cpu_burst == 0)
-                {
-                    cur_running_process->state = TERMINATED;
-                    cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                    cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
-                }
+                ExecuteCPU(cur_running_process, system);
                 free(temp_queue.processes);
             }
             else
@@ -765,35 +734,16 @@ void SjfP(System *system)
                 cur_running_process = &system->processes[shortest_process.pid - 1];
                 free(temp_queue.processes);
 
-                cur_running_process->remaining_cpu_burst -= 1;
-                if (cur_running_process->remaining_cpu_burst == 0)
-                {
-                    cur_running_process->state = TERMINATED;
-                    cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                    cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
-                }
+                ExecuteCPU(cur_running_process, system);
             }
             else
             {
-                cur_running_process->remaining_cpu_burst -= 1;
-                if (cur_running_process->remaining_cpu_burst == 0)
-                {
-                    cur_running_process->state = TERMINATED;
-                    cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                    cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
-                }
+                ExecuteCPU(cur_running_process, system);
             }
         }
         else
         {
-            cur_running_process->remaining_cpu_burst -= 1;
-
-            if (cur_running_process->remaining_cpu_burst == 0)
-            {
-                cur_running_process->state = TERMINATED;
-                cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
-            }
+            ExecuteCPU(cur_running_process, system);
         }
     }
 
@@ -903,26 +853,13 @@ void priority_np(System *system)
                 system->processes[highest_process.pid - 1].state = RUNNING;
 
                 // 새 프로세스도 한 차례 실행
-                cur_running_process->remaining_cpu_burst -= 1;
-
-                if (cur_running_process->remaining_cpu_burst == 0)
-                {
-                    cur_running_process->state = TERMINATED;
-                    cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                    cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
-                }
+                ExecuteCPU(cur_running_process, system);
                 free(temp_queue.processes);
             }
         }
         else
         {
-            cur_running_process->remaining_cpu_burst -= 1;
-            if (cur_running_process->remaining_cpu_burst == 0)
-            {
-                cur_running_process->state = TERMINATED;
-                cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
-            }
+            ExecuteCPU(cur_running_process, system);
         }
         RecordGantt(system, cur_running_process->pid);
     }
@@ -1027,13 +964,7 @@ void priority_p(System *system)
                 system->processes[highest_process.pid - 1].state = RUNNING;
 
                 // 새 프로세스도 한 차례 실행
-                cur_running_process->remaining_cpu_burst -= 1;
-                if (cur_running_process->remaining_cpu_burst == 0)
-                {
-                    cur_running_process->state = TERMINATED;
-                    cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                    cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
-                }
+                ExecuteCPU(cur_running_process, system);
                 free(temp_queue.processes);
             }
             else
@@ -1088,13 +1019,7 @@ void priority_p(System *system)
             }
 
             // CPU 실행
-            cur_running_process->remaining_cpu_burst -= 1;
-            if (cur_running_process->remaining_cpu_burst == 0)
-            {
-                cur_running_process->state = TERMINATED;
-                cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
-            }
+            ExecuteCPU(cur_running_process, system);
         }
     }
 
@@ -1147,14 +1072,11 @@ void round_robin(System *system)
                 system->cur_used_quantum = 0;
 
                 // 새 프로세스도 한 차례(1초) 실행
-                cur_running_process->remaining_cpu_burst -= 1;
+                ExecuteCPU(cur_running_process, system);
                 system->cur_used_quantum += 1;
 
-                if (cur_running_process->remaining_cpu_burst == 0)
+                if (cur_running_process->state == TERMINATED)
                 {
-                    cur_running_process->state = TERMINATED;
-                    cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                    cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
                     system->cur_used_quantum = 0;
                 }
             }
@@ -1179,14 +1101,11 @@ void round_robin(System *system)
                 system->cur_used_quantum = 0;
 
                 // 새 프로세스도 한 차례 실행
-                cur_running_process->remaining_cpu_burst -= 1;
+                ExecuteCPU(cur_running_process, system);
                 system->cur_used_quantum += 1;
 
-                if (cur_running_process->remaining_cpu_burst == 0)
+                if (cur_running_process->state == TERMINATED)
                 {
-                    cur_running_process->state = TERMINATED;
-                    cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                    cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
                     system->cur_used_quantum = 0;
                 }
             }
@@ -1199,14 +1118,11 @@ void round_robin(System *system)
         else
         {
             // 일반적인 CPU 실행
-            cur_running_process->remaining_cpu_burst -= 1;
+            ExecuteCPU(cur_running_process, system);
             system->cur_used_quantum += 1;
 
-            if (cur_running_process->remaining_cpu_burst == 0)
+            if (cur_running_process->state == TERMINATED)
             {
-                cur_running_process->state = TERMINATED;
-                cur_running_process->turnaround_time = system->cur_time - cur_running_process->arrival_time + 1;
-                cur_running_process->waiting_time = cur_running_process->turnaround_time - cur_running_process->cpu_burst_time;
                 system->cur_used_quantum = 0;
             }
         }
