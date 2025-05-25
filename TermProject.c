@@ -206,7 +206,7 @@ void MakeProcess(System *system)
     system->processes = (Process*)malloc(system->process_count * sizeof(Process));
 
     printf("\n[Create Process]\n");
-    printf("PID\tArrival Time\tCPU Burst\tPriority\t(I/O Request Time, Burst)\n");
+    printf("PID\tArrival Time\tCPU Burst\tPriority\t(I/O Request Time/Burst)\n");
     printf("-------------------------------------------------------------------------\n");
 
     srand(time(NULL)); // 랜덤을 더 다양하게
@@ -340,7 +340,7 @@ void SysConfig(System *system)
     scanf("%d", &system->process_count);
 
     // 초기화
-    system->algorithm = FCFS;
+    system->algorithm = FCFS;  // 기본 알고리즘 : FCFS로
     system->time_quantum = TIME_QUANTUM;
 
     system->ready_queue = InitQueue(system->process_count * QUEUE_SIZE);
@@ -685,6 +685,7 @@ void SjfP(System *system)
                     Enqueue(&temp_queue, p);
                 }
             }
+            // 임시 큐를 준비 큐로 복사
             while (!IsEmpty(&temp_queue))
             {
                 Process p = Dequeue(&temp_queue);
@@ -1126,7 +1127,7 @@ void round_robin(System *system)
                 system->processes[next_process.pid - 1].state = RUNNING;
                 system->cur_used_quantum = 0;
 
-                // 새 프로세스도 한 차례 실행
+                // 새 프로세스도 한 차례(1초) 실행
                 cur_running_process->remaining_cpu_burst -= 1;
                 system->cur_used_quantum += 1;
 
@@ -1140,7 +1141,7 @@ void round_robin(System *system)
             }
             else
             {
-                cur_running_process = NULL; // CPU가 idle 상태
+                cur_running_process = NULL; // 준비 큐에 아무 프로세스도 없을 경우 CPU가 idle 상태
             }
         }
         // 할당된 시간을 다 쓴 경우
@@ -1220,18 +1221,17 @@ bool IsAllProcessesTerminated(System *system)
 // 모든 알고리즘 실행 및 결과 출력 함수
 void RunAllAlgorithms(System *system, Process *backup)
 {
-    char* algorithm_names[] = {"FCFS", "SJF (Non-Preemptive)", "SJF (Preemptive)",
-                              "Priority (Non-Preemptive)", "Priority (Preemptive)", "Round Robin"};
+    char* algorithm_names[] = {"FCFS", "SJF (Non-Preemptive)", "SJF (Preemptive)", "Priority (Non-Preemptive)", "Priority (Preemptive)", "Round Robin"};
 
     // 모든 알고리즘 실행
     for (int alg = 0; alg <= 5; alg++)
     {
-
         // 간트차트 초기화
         system->gantt = (GanttInfo*)malloc(1000 * sizeof(GanttInfo));
         system->gantt_index = 0;
         system->gantt_capacity = 1000;
-        // 프로세스 상태 복원
+
+        // 프로세스 상태 초기화
         for (int i = 0; i < system->process_count; i++)
         {
             system->processes[i].remaining_cpu_burst = backup[i].cpu_burst_time;
@@ -1292,11 +1292,12 @@ void RunAllAlgorithms(System *system, Process *backup)
             total_waiting += p->waiting_time;
         }
 
+        // 각종 시간 지표 출력
         printf("------------------------------------\n");
         printf("Average Turnaround Time: %.2f\n", total_turnaround / system->process_count);
         printf("Average Waiting Time: %.2f\n", total_waiting / system->process_count);
 
-        // 간트차트 출력
+        // 간트 차트 출력
         printf("\nGantt Chart:\n");
         printf("Time: ");
         for (int i = 0; i < system->gantt_index; i++)
@@ -1328,7 +1329,7 @@ int main() {
     Process *backup = (Process*)malloc(sys.process_count * sizeof(Process));
     for (int i = 0; i < sys.process_count; i++)
     {
-        backup[i] = sys.processes[i];  // 구조체 전체 복사
+        backup[i] = sys.processes[i];  // 백업용 구조체 전체 복사
     }
 
     RunAllAlgorithms(&sys, backup);
