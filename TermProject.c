@@ -176,6 +176,7 @@ bool HasIORequest(Process *process)
 void ExecuteCPU(Process *process, System *system)
 {
     process->remaining_cpu_burst -= 1;
+    if (process->remaining_cpu_burst == 0)
     {
         process->state = TERMINATED;
         process->turnaround_time = system->cur_time - process->arrival_time + 1;
