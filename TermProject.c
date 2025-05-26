@@ -459,12 +459,23 @@ void Fcfs(System *system)
                 // 새 프로세스도 한 차례 실행
                 ExecuteCPU(cur_running_process, system);
             }
+            else
+            {
+                cur_running_process = NULL;
+            }
         }
         else
         {
             ExecuteCPU(cur_running_process, system);
         }
-        RecordGantt(system, cur_running_process->pid);
+        if (cur_running_process != NULL)
+        {
+            RecordGantt(system, cur_running_process->pid);
+        }
+        else
+        {
+            RecordGantt(system, -1);
+        }
     }
     else
     {
@@ -574,12 +585,23 @@ void SjfNP(System *system)
                 ExecuteCPU(cur_running_process, system);
                 free(temp_queue.processes);
             }
+            else
+            {
+                cur_running_process = NULL;
+            }
         }
         else
         {
             ExecuteCPU(cur_running_process, system);
         }
-        RecordGantt(system, cur_running_process->pid);
+        if (cur_running_process != NULL)
+        {
+            RecordGantt(system, cur_running_process->pid);
+        }
+        else
+        {
+            RecordGantt(system, -1);
+        }
     }
     else
     {
@@ -857,12 +879,23 @@ void priority_np(System *system)
                 ExecuteCPU(cur_running_process, system);
                 free(temp_queue.processes);
             }
+            else
+            {
+                cur_running_process = NULL;
+            }
         }
         else
         {
             ExecuteCPU(cur_running_process, system);
         }
-        RecordGantt(system, cur_running_process->pid);
+        if (cur_running_process != NULL)
+        {
+            RecordGantt(system, cur_running_process->pid);
+        }
+        else
+        {
+            RecordGantt(system, -1);
+        }
     }
     else
     {
