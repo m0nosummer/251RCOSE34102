@@ -8,7 +8,7 @@
   </component>
   <component name="BackendCodeEditorMiscSettings">
     <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
-    <option name="/Default/Housekeeping/LiveTemplatesHousekeeping/HotspotSessionHintIsShown/@EntryValue" value="true" type="bool" />
+    <option name="/Default/Housekeeping/GlobalSettingsUpgraded/IsUpgraded/@EntryValue" value="true" type="bool" />
   </component>
   <component name="CMakePresetLoader">{
   &quot;useNewFormat&quot;: true
@@ -20,9 +20,7 @@
     <option name="reloaded" value="true" />
   </component>
   <component name="CMakeRunConfigurationManager">
-    <generated>
-      <config projectName="251RCOSE34102" targetName="251RCOSE34102" />
-    </generated>
+    <generated />
   </component>
   <component name="CMakeSettings">
     <configurations>
@@ -32,8 +30,9 @@
   <component name="ChangeListManager">
     <list default="true" id="801a5de8-5205-4a41-8de3-870e05c4c2a6" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TermProject.c" beforeDir="false" afterPath="$PROJECT_DIR$/TermProject.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TermProject.exe" beforeDir="false" afterPath="$PROJECT_DIR$/TermProject.exe" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/CPU Scheduling Simulator.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/TermProject.exe" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -90,7 +89,12 @@
   }
 }</component>
   <component name="RunManager" selected="C/C++ File.TermProject.c">
-    <configuration name="251RCOSE34102" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="251RCOSE34102" TARGET_NAME="251RCOSE34102" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="251RCOSE34102" RUN_TARGET_NAME="251RCOSE34102">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="251RCOSE34102" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Project" TARGET_NAME="251RCOSE34102" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="Project" RUN_TARGET_NAME="251RCOSE34102">
       <envs>
         <env name="LANG" value="ko_KR.UTF-8" />
       </envs>
@@ -126,6 +130,10 @@
       <workItem from="1748061180915" duration="24246000" />
       <workItem from="1748136417952" duration="41290000" />
       <workItem from="1748216895031" duration="1751000" />
+      <workItem from="1749386595235" duration="601000" />
+      <workItem from="1749517475547" duration="426000" />
+      <workItem from="1749553131250" duration="11861000" />
+      <workItem from="1762154906132" duration="30000" />
     </task>
     <servers />
   </component>
